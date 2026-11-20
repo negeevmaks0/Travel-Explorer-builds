@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travel Explorer</title>
+<meta name="description" content="Travel Explorer — личная карта мира, которая открывается там, где вы действительно побывали. Android и iPhone.">
+<meta name="theme-color" content="#0B0D10">
+<meta property="og:title" content="Travel Explorer">
+<meta property="og:description" content="Личная карта мира, которая открывается шаг за шагом.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B0D10; --surface:#12151A; --raised:#181C22; --tile:#161A21; --border:#252A32;
+  --text:#ECEFF3; --text2:#A1A9B4; --muted:#6C7582;
+  --accent:#8FA6C4; --teal:#2BA18F; --teal2:#3CC7B0; --orange:#F2994A;
+  --radius:18px; --max:1120px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 16px}
+@media(min-width:720px){.wrap{padding:0 28px}}
+
+/* nav */
+nav{position:sticky;top:0;z-index:20;background:rgba(11,13,16,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(37,42,50,.6)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em;text-decoration:none}
+.brand svg{flex:none}
+.navlinks{display:flex;align-items:center;gap:22px;font-size:14px;color:var(--text2)}
+.navlinks a{text-decoration:none}
+.navlinks a:hover{color:var(--text)}
+.navlinks .hide-sm{display:none}
+@media(min-width:760px){.navlinks .hide-sm{display:inline}}
+.lang{display:flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.lang button{background:none;border:0;color:var(--text2);font:inherit;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer}
+.lang button.on{background:var(--raised);color:var(--text)}
+
+/* hero */
+.hero{position:relative;padding:56px 0 40px;overflow:hidden}
+#hexcanvas{position:absolute;inset:0;width:100%;height:100%;opacity:.9;pointer-events:none}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(11,13,16,.2),rgba(11,13,16,.85) 70%);pointer-events:none}
+.hero .wrap{position:relative;z-index:2;display:grid;gap:40px;align-items:center}
+@media(min-width:900px){.hero{padding:90px 0 70px}.hero .wrap{grid-template-columns:1.15fr .85fr}}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--teal2);background:rgba(43,161,143,.1);border:1px solid rgba(43,161,143,.28);padding:6px 12px;border-radius:999px}
+.eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--teal2);box-shadow:0 0 10px var(--teal2)}
+h1{font-size:clamp(36px,7vw,64px);line-height:1.04;letter-spacing:-.035em;font-weight:800;margin:18px 0 18px}
+h1 em{font-style:normal;background:linear-gradient(100deg,var(--teal2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(16px,2.2vw,19px);color:var(--text2);max-width:560px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:14px;font-weight:700;font-size:15px;text-decoration:none;border:1px solid var(--border);background:var(--surface);transition:transform .15s,border-color .15s,background .15s}
+.btn:hover{transform:translateY(-1px);border-color:#3a414c}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#06110F}
+.btn.primary:hover{background:var(--teal2);border-color:var(--teal2)}
+.btn small{display:block;font-weight:500;font-size:12px;opacity:.75;line-height:1.2}
+.btn span{line-height:1.25}
+.meta{margin-top:16px;font-size:13px;color:var(--muted)}
+
+/* phone mock */
+.phone{justify-self:center;width:min(300px,82vw);aspect-ratio:9/19;border-radius:42px;background:#050608;border:1px solid #2a3039;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 8px #0e1115,0 0 70px rgba(43,161,143,.12);padding:10px;position:relative}
+.screen{position:relative;width:100%;height:100%;border-radius:33px;overflow:hidden;background:#0f1216}
+.screen canvas{position:absolute;inset:0;width:100%;height:100%}
+.island{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:84px;height:24px;border-radius:14px;background:#000;z-index:3}
+.chip{position:absolute;z-index:3;background:rgba(18,21,26,.88);border:1px solid var(--border);border-radius:12px;padding:6px 10px;font-size:11px;font-weight:700;backdrop-filter:blur(6px)}
+.chip.top{top:44px;left:12px;display:flex;gap:10px}
+.chip.top b{color:var(--teal2)}
+.chip.xp{top:44px;right:12px;color:#F2C94C}
+.tabbar{position:absolute;bottom:0;left:0;right:0;z-index:3;height:58px;background:rgba(18,21,26,.95);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;padding-bottom:6px}
+.tabbar span{width:22px;height:4px;border-radius:2px;background:#3a414c}
+.tabbar span.on{background:var(--accent);width:34px}
+.pop{position:absolute;z-index:3;font-size:12px;font-weight:800;color:#F2C94C;text-shadow:0 1px 6px #000;opacity:0;transition:opacity .3s,transform 1.2s}
+
+/* sections */
+section{padding:72px 0}
+.sec-head{max-width:640px;margin-bottom:36px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h2{font-size:clamp(28px,4.4vw,42px);line-height:1.1;letter-spacing:-.025em;margin:10px 0 12px}
+.sec-head p{color:var(--text2);font-size:17px}
+
+.steps{display:grid;gap:14px}
+@media(min-width:800px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{background:var(--tile);border-radius:var(--radius);padding:24px;position:relative;overflow:hidden}
+.step .n{font-size:13px;font-weight:800;color:var(--teal2)}
+.step h3{font-size:20px;margin:8px 0 6px;letter-spacing:-.01em}
+.step p{color:var(--text2);font-size:15px}
+.step svg{position:absolute;right:-10px;bottom:-14px;opacity:.16}
+
+.grid{display:grid;gap:14px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:980px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--tile);border-radius:var(--radius);padding:22px;border:1px solid transparent;transition:border-color .2s}
+.card:hover{border-color:var(--border)}
+.ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--raised);margin-bottom:14px}
+.card h3{font-size:17px;margin-bottom:6px}
+.card p{color:var(--text2);font-size:14.5px}
+
+.principles{display:grid;gap:14px}
+@media(min-width:800px){.principles{grid-template-columns:repeat(3,1fr)}}
+.pr{border-left:3px solid var(--teal);padding:4px 0 4px 18px}
+.pr h3{font-size:17px;margin-bottom:6px}
+.pr p{color:var(--text2);font-size:15px}
+
+.dl{display:grid;gap:14px}
+@media(min-width:800px){.dl{grid-template-columns:1fr 1fr}}
+.plat{background:var(--surface);border:1px solid var(--border);border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:14px}
+.plat header{display:flex;align-items:center;gap:12px}
+.plat h3{font-size:22px}
+.plat ol{padding-left:20px;color:var(--text2);font-size:15px;display:grid;gap:6px}
+.plat .btn{align-self:flex-start}
+.note{font-size:13px;color:var(--muted)}
+.ver{font-size:13px;color:var(--text2);background:var(--raised);border-radius:999px;padding:4px 10px;margin-left:auto;white-space:nowrap}
+
+details{background:var(--tile);border-radius:14px;padding:16px 20px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted);font-weight:500}
+details[open] summary::after{content:"–"}
+details p{color:var(--text2);margin-top:10px;font-size:15px}
+
+footer{border-top:1px solid var(--border);padding:30px 0 40px;color:var(--muted);font-size:13px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+
+[data-en]{display:none}
+html[lang=en] [data-ru]{display:none}
+html[lang=en] [data-en]{display:revert}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 2l10.4 6v12L14 26 3.6 20V8z" fill="none" stroke="#3CC7B0" stroke-width="2"/><path d="M14 8.5l5.2 3v6L14 20.5l-5.2-3v-6z" fill="#2BA18F"/></svg>
+      Travel Explorer
+    </a>
+    <div class="navlinks">
+      <a class="hide-sm" href="#how"><span data-ru>Как это работает</span><span data-en>How it works</span></a>
+      <a class="hide-sm" href="#features"><span data-ru>Возможности</span><span data-en>Features</span></a>
+      <a href="#download"><span data-ru>Скачать</span><span data-en>Download</span></a>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="ru" class="on">RU</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="hexcanvas" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div>
+      <span class="eyebrow"><i></i><span data-ru>Android и iPhone · бесплатно</span><span data-en>Android &amp; iPhone · free</span></span>
+      <h1 data-ru>Карта мира, которую <em>открываете вы</em></h1>
+      <h1 data-en>A world map that <em>you uncover</em></h1>
+      <p class="lead" data-ru>Travel Explorer превращает каждую прогулку и поездку в исследование. Мир на карте закрыт — и открывается клетка за клеткой там, где вы действительно побывали. Ваша карта — только ваша.</p>
+      <p class="lead" data-en>Travel Explorer turns every walk and trip into exploration. The world map starts hidden and opens cell by cell wherever you have actually been. Your map belongs to you alone.</p>
+      <div class="cta">
+        <a class="btn primary" href="#download">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          <span data-ru>Скачать приложение</span><span data-en>Get the app</span>
+        </a>
+        <a class="btn" href="#how"><span data-ru>Как это работает</span><span data-en>How it works</span></a>
+      </div>
+      <p class="meta" id="hero-version"></p>
+    </div>
+    <div class="phone" aria-hidden="true">
+      <div class="screen">
+        <div class="island"></div>
+        <canvas id="phonecanvas"></canvas>
+        <div class="chip top"><span>⬡ <b id="cellcount">128</b></span><span>2,4 km</span></div>
+        <div class="chip xp">Lv 14</div>
+        <div class="pop" id="pop">+XP</div>
+        <div class="tabbar"><span></span><span></span><span class="on"></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><span data-ru>Как это работает</span><span data-en>How it works</span></div>
+      <h2 data-ru>Просто живите. Карта откроется сама.</h2>
+      <h2 data-en>Just live your life. The map opens by itself.</h2>
+      <p data-ru>Не нужно ничего нажимать в дороге: приложение само записывает маршрут и открывает клетки, пока вы идёте, едете или путешествуете.</p>
+      <p data-en>No need to tap anything on the way: the app records the route and opens cells while you walk, ride or travel.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="n">01</div>
+        <h3 data-ru>Двигайтесь</h3><h3 data-en>Move</h3>
+        <p data-ru>Прогулка до магазина, дорога на работу, отпуск в другой стране — подойдёт любое реальное перемещение.</p>
+        <p data-en>A walk to the shop, the commute, a holiday abroad — any real movement counts.</p>
+        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="1.5" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="M7 21l3-7 3 2v5M10 14l-1-4 4-2 3 4 3 1"/></svg>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <h3 data-ru>Открывайте клетки</h3><h3 data-en>Uncover cells</h3>
+        <p data-ru>Мир разделён на шестиугольники около 16 метров. Каждая клетка на вашем пути становится открытой — навсегда.</p>
+        <p data-en>The world is split into hexagons of about 16 metres. Every cell on your path becomes uncovered — for good.</p>
+        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="1.5" aria-hidden="true"><path d="M12 2l8.7 5v10L12 22l-8.7-5V7z"/><path d="M12 8l3.5 2v4L12 16l-3.5-2v-4z"/></svg>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <h3 data-ru>Растите</h3><h3 data-en>Grow</h3>
+        <p data-ru>Опыт и уровни, задания, достижения, страны и города в паспорте путешествий — видно, как растёт ваш мир.</p>
+        <p data-en>XP and levels, tasks, achievements, countries and cities in your travel passport — watch your world grow.</p>
+        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="1.5" aria-hidden="true"><path d="M3 20h18M6 16v4M11 11v9M16 6v14"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background:linear-gradient(180deg,transparent,rgba(18,21,26,.6) 30%,transparent)">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><span data-ru>Возможности</span><span data-en>Features</span></div>
+      <h2 data-ru>Всё, чтобы исследование не надоедало</h2>
+      <h2 data-en>Everything that keeps exploring fun</h2>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></div>
+        <h3 data-ru>Личная карта исследования</h3><h3 data-en>Your personal exploration map</h3>
+        <p data-ru>Открытые клетки сливаются в области, на карте видна вся история маршрутов. Тёмная, светлая и обычная подложка.</p>
+        <p data-en>Uncovered cells merge into areas, and the whole route history is on the map. Dark, light and standard map styles.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3 data-ru>Автоматическая история</h3><h3 data-en>Automatic history</h3>
+        <p data-ru>Прогулки, поездки и остановки распознаются сами. Запись идёт в фоне, даже когда телефон в кармане.</p>
+        <p data-en>Walks, trips and stops are recognised automatically. Recording keeps going in the background with the phone in your pocket.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 17h8"/></svg></div>
+        <h3 data-ru>Паспорт путешествий</h3><h3 data-en>Travel passport</h3>
+        <p data-ru>Страны и города с медалями-флагами, известные места, расстояние, шаги и доля исследованной суши мира.</p>
+        <p data-en>Countries and cities with flag medals, landmarks, distance, steps and your share of the world's land explored.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h9"/></svg></div>
+        <h3 data-ru>Задания</h3><h3 data-en>Tasks</h3>
+        <p data-ru>Ежедневные, еженедельные и особые испытания. Только безопасные цели — без гонок и взгляда в экран на ходу.</p>
+        <p data-en>Daily, weekly and special challenges. Only safe goals — no racing and no staring at the screen on the move.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+        <h3 data-ru>Уровни и улучшения</h3><h3 data-en>Levels and upgrades</h3>
+        <p data-ru>200 уровней, достижения, монеты и Полярис. Улучшения расширяют область открытия вокруг вашего пути.</p>
+        <p data-en>200 levels, achievements, coins and Polaris. Upgrades widen the uncovered area around your path.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c2.8 0 5 2.2 5 5"/></svg></div>
+        <h3 data-ru>Друзья и общая карта</h3><h3 data-en>Friends and a shared map</h3>
+        <p data-ru>Добавляйте друзей по @имени, смотрите их клетки своим цветом и соревнуйтесь в рейтингах городов и стран — только по согласию.</p>
+        <p data-en>Add friends by @username, see their cells in their own colour and compete in city and country rankings — opt-in only.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><path d="M7 18a5 5 0 01-.6-10A6 6 0 0118 9a4.5 4.5 0 01-.5 9z"/><path d="M12 12v6M9.5 15.5L12 18l2.5-2.5"/></svg></div>
+        <h3 data-ru>Аккаунт и синхронизация</h3><h3 data-en>Account and sync</h3>
+        <p data-ru>Прогресс хранится на сервере и переносится на новый телефон. Маршруты — в зашифрованной копии.</p>
+        <p data-en>Progress is kept on the server and moves to a new phone with you. Routes are stored as an encrypted copy.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></div>
+        <h3 data-ru>Обновления внутри приложения</h3><h3 data-en>In-app updates</h3>
+        <p data-ru>Приложение само сообщает о новой версии и ставит её одной кнопкой — без поиска файлов.</p>
+        <p data-en>The app tells you about a new version and installs it with one button — no hunting for files.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3CC7B0" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg></div>
+        <h3 data-ru>5 языков</h3><h3 data-en>5 languages</h3>
+        <p data-ru>Русский, украинский, английский, немецкий и польский. Километры или мили.</p>
+        <p data-en>Russian, Ukrainian, English, German and Polish. Kilometres or miles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="principles">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><span data-ru>Наши принципы</span><span data-en>Our principles</span></div>
+      <h2 data-ru>Исследование — личное дело каждого</h2>
+      <h2 data-en>Exploration is personal</h2>
+    </div>
+    <div class="principles">
+      <div class="pr">
+        <h3 data-ru>Никакой войны за территорию</h3><h3 data-en>No fight over territory</h3>
+        <p data-ru>Клетки нельзя отнять, захватить или переписать. Если вы и друг открыли одну улицу — она открыта у обоих.</p>
+        <p data-en>Cells can't be taken, captured or overwritten. If you and a friend both walk a street, it's uncovered for both of you.</p>
+      </div>
+      <div class="pr">
+        <h3 data-ru>Безопасность прежде наград</h3><h3 data-en>Safety before rewards</h3>
+        <p data-ru>Не нужно смотреть в телефон в пути. Приложение не поощряет спешку и рискованные маршруты.</p>
+        <p data-en>You never need to look at the phone on the way. The app never rewards rushing or risky routes.</p>
+      </div>
+      <div class="pr">
+        <h3 data-ru>Приватность по умолчанию</h3><h3 data-en>Private by default</h3>
+        <p data-ru>Друзья видят ваши клетки и место в рейтинге только если вы это включили. Маршруты хранятся зашифрованными.</p>
+        <p data-en>Friends see your cells and ranking only if you turn it on. Routes are stored encrypted.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="download" style="background:linear-gradient(180deg,transparent,rgba(43,161,143,.06))">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="kicker"><span data-ru>Скачать</span><span data-en>Download</span></div>
+      <h2 data-ru>Начните исследовать сегодня</h2>
+      <h2 data-en>Start exploring today</h2>
+      <p data-ru>Приложение пока распространяется напрямую, не через магазины. Это бесплатно.</p>
+      <p data-en>For now the app is distributed directly, not through app stores. It's free.</p>
+    </div>
+    <div class="dl">
+      <div class="plat">
+        <header>
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="#3CC7B0" aria-hidden="true"><path d="M7 9h10v8a1 1 0 01-1 1h-1v3h-2v-3h-2v3H9v-3H8a1 1 0 01-1-1zM5 9.5a1 1 0 112 0V15a1 1 0 11-2 0zM17 9.5a1 1 0 112 0V15a1 1 0 11-2 0zM7.2 8a4.8 4.8 0 019.6 0zM8.6 3.2l1 1.6M15.4 3.2l-1 1.6" stroke="#3CC7B0" stroke-width=".8"/></svg>
+          <h3>Android</h3>
+          <span class="ver" id="ver-android">—</span>
+        </header>
+        <ol>
+          <li data-ru>Скачайте файл APK кнопкой ниже.</li><li data-en>Download the APK with the button below.</li>
+          <li data-ru>Откройте его и разрешите установку из этого источника.</li><li data-en>Open it and allow installs from this source.</li>
+          <li data-ru>Дальше приложение обновляется само.</li><li data-en>After that the app updates itself.</li>
+        </ol>
+        <a class="btn primary" id="btn-android" href="https://github.com/negeevmaks0/Travel-Explorer-builds/releases/latest">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          <span><span data-ru>Скачать APK</span><span data-en>Download APK</span><small id="size-android"></small></span>
+        </a>
+        <p class="note" data-ru>Для телефонов с 64-битным процессором (arm64) — это почти все модели последних лет.</p>
+        <p class="note" data-en>For phones with a 64-bit processor (arm64) — nearly every recent model.</p>
+      </div>
+      <div class="plat">
+        <header>
+          <svg width="28" height="30" viewBox="0 0 24 24" fill="#3CC7B0" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8C7 7.3 5.6 8.2 4.8 9.6c-1.6 2.8-.4 6.9 1.1 9.2.8 1.1 1.7 2.3 2.9 2.3 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2-1.1 2.8-2.3.9-1.3 1.2-2.5 1.3-2.6 0 0-2.4-.9-2.5-3.6zM14.2 5.6c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3z"/></svg>
+          <h3>iPhone</h3>
+          <span class="ver" id="ver-ios">—</span>
+        </header>
+        <ol>
+          <li data-ru>Установите SideStore — бесплатный способ ставить приложения со своим Apple ID (нужен компьютер один раз).</li>
+          <li data-en>Install SideStore — a free way to install apps with your own Apple ID (needs a computer once).</li>
+          <li data-ru>Скачайте файл IPA и откройте его в SideStore.</li><li data-en>Download the IPA and open it in SideStore.</li>
+          <li data-ru>SideStore продлевает подпись каждые 7 дней сам, обновления приходят в приложение.</li>
+          <li data-en>SideStore renews the signature every 7 days itself; updates arrive in the app.</li>
+        </ol>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <a class="btn" id="btn-ios" href="https://github.com/negeevmaks0/Travel-Explorer-builds/releases/latest">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+            <span data-ru>Скачать IPA</span><span data-en>Download IPA</span>
+          </a>
+          <a class="btn" href="https://sidestore.io" target="_blank" rel="noopener">SideStore ↗</a>
+        </div>
+        <p class="note" data-ru>iOS 15 и новее. Версии в App Store пока нет.</p>
+        <p class="note" data-en>iOS 15 or newer. Not in the App Store yet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap" style="max-width:820px">
+    <div class="sec-head">
+      <div class="kicker">FAQ</div>
+      <h2 data-ru>Частые вопросы</h2><h2 data-en>Questions</h2>
+    </div>
+    <details>
+      <summary><span data-ru>Это игра?</span><span data-en>Is it a game?</span></summary>
+      <p data-ru>Это дневник путешествий с игровыми элементами: уровни, задания и награды делают исследование интереснее, но главное — ваша собственная карта мира.</p>
+      <p data-en>It's a travel diary with game elements: levels, tasks and rewards make exploring more fun, but the heart of it is your own map of the world.</p>
+    </details>
+    <details>
+      <summary><span data-ru>Сильно ли садится батарея?</span><span data-en>Does it drain the battery?</span></summary>
+      <p data-ru>Запись подстраивается под движение: когда вы стоите на месте, координаты запрашиваются реже. Отключить запись можно в настройках в любой момент.</p>
+      <p data-en>Recording adapts to your movement: when you stay put, location is requested less often. You can turn recording off in Settings at any time.</p>
+    </details>
+    <details>
+      <summary><span data-ru>Кто видит мои маршруты?</span><span data-en>Who can see my routes?</span></summary>
+      <p data-ru>Никто, кроме вас. Друзья видят только открытые клетки и только если вы это разрешили. Сами маршруты хранятся в зашифрованной копии.</p>
+      <p data-en>Nobody but you. Friends see only uncovered cells and only if you allow it. The routes themselves are stored as an encrypted copy.</p>
+    </details>
+    <details>
+      <summary><span data-ru>Почему не в Google Play и App Store?</span><span data-en>Why not on Google Play or the App Store?</span></summary>
+      <p data-ru>Проект молодой и пока распространяется напрямую. Публикация в магазинах — в планах.</p>
+      <p data-en>The project is young and distributed directly for now. Store releases are planned.</p>
+    </details>
+    <details>
+      <summary><span data-ru>Нужен ли интернет?</span><span data-en>Do I need the internet?</span></summary>
+      <p data-ru>Для записи и открытия клеток — нет. Интернет нужен для подложки карты, синхронизации и друзей.</p>
+      <p data-en>Not for recording and uncovering cells. The internet is needed for map tiles, sync and friends.</p>
+    </details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="year">2026</span> Travel Explorer</span>
+    <span><span data-ru>Карта: © участники OpenStreetMap, © CARTO</span><span data-en>Map: © OpenStreetMap contributors, © CARTO</span></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var REPO = "negeevmaks0/Travel-Explorer-builds";
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  /* language: browser default, remembered per viewer */
+  function setLang(l){
+    document.documentElement.lang = l;
+    document.querySelectorAll(".lang button").forEach(function(b){ b.classList.toggle("on", b.dataset.lang === l); });
+    try { localStorage.setItem("te-lang", l); } catch (e) {}
+  }
+  var saved = null;
+  try { saved = localStorage.getItem("te-lang"); } catch (e) {}
+  setLang(saved || ((navigator.language || "ru").slice(0,2) === "en" ? "en" : "ru"));
+  document.querySelectorAll(".lang button").forEach(function(b){ b.addEventListener("click", function(){ setLang(b.dataset.lang); }); });
+
+  /* latest release: direct file links + version (falls back to the releases page) */
+  fetch("https://api.github.com/repos/" + REPO + "/releases/latest", {headers:{Accept:"application/vnd.github+json"}})
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(rel){
+      var v = (rel.tag_name || "").replace(/^v/, "");
+      (rel.assets || []).forEach(function(a){
+        if (/\.apk$/.test(a.name)) {
+          document.getElementById("btn-android").href = a.browser_download_url;
+          document.getElementById("size-android").textContent = (a.size/1048576).toFixed(0) + " MB";
+        }
+        if (/\.ipa$/.test(a.name)) document.getElementById("btn-ios").href = a.browser_download_url;
+      });
+      if (v) {
+        document.getElementById("ver-android").textContent = "v" + v;
+        document.getElementById("ver-ios").textContent = "v" + v;
+        var d = rel.published_at ? new Date(rel.published_at).toLocaleDateString() : "";
+        document.getElementById("hero-version").textContent = "v" + v + (d ? " · " + d : "");
+      }
+    })
+    .catch(function(){ /* no release yet: buttons keep the releases page */ });
+
+  /* hex helpers (pointy-top) */
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function hexPath(ctx, x, y, r){
+    ctx.beginPath();
+    for (var i = 0; i < 6; i++){
+      var a = Math.PI/180*(60*i - 30);
+      ctx.lineTo(x + r*Math.cos(a), y + r*Math.sin(a));
+    }
+    ctx.closePath();
+  }
+  function center(q, rr, r){ return [r*Math.sqrt(3)*(q + rr/2), r*1.5*rr]; }
+  function toHex(x, y, r){
+    var q = (Math.sqrt(3)/3*x - y/3)/r, rr = (2/3*y)/r, s = -q - rr;
+    var Q = Math.round(q), R = Math.round(rr), S = Math.round(s);
+    var dq = Math.abs(Q-q), dr = Math.abs(R-rr), ds = Math.abs(S-s);
+    if (dq > dr && dq > ds) Q = -R - S; else if (dr > ds) R = -Q - S;
+    return [Q, R];
+  }
+
+  /* a wandering route that uncovers hexes */
+  function Explorer(canvas, opt){
+    var ctx = canvas.getContext("2d"), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W, H, open = {}, trail = [], p, ang, t = 0, count = 0;
+    function resize(){
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W*dpr; canvas.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+      open = {}; trail = []; p = [W*opt.sx, H*opt.sy]; ang = -0.6; count = 0;
+      for (var i = 0; i < opt.warm; i++) step();
+    }
+    function step(){
+      t += 1;
+      ang += (Math.sin(t*0.013) + Math.sin(t*0.031)*0.6)*0.035;
+      var m = opt.margin;
+      if (p[0] < m) ang = 0; if (p[0] > W - m) ang = Math.PI;
+      if (p[1] < m) ang = Math.PI/2; if (p[1] > H - m) ang = -Math.PI/2;
+      p = [p[0] + Math.cos(ang)*opt.speed, p[1] + Math.sin(ang)*opt.speed];
+      trail.push(p); if (trail.length > opt.trail) trail.shift();
+      var h = toHex(p[0], p[1], opt.r);
+      for (var dq = -1; dq <= 1; dq++) for (var dr = -1; dr <= 1; dr++){
+        if (Math.abs(dq + dr) > 1) continue;
+        if (opt.wide === false && (dq || dr)) continue;
+        var k = (h[0]+dq) + "," + (h[1]+dr);
+        if (!open[k]) { open[k] = 0.01; count++; if (opt.onOpen) opt.onOpen(count, p); }
+      }
+    }
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      if (opt.bg){ ctx.fillStyle = opt.bg; ctx.fillRect(0,0,W,H); }
+      if (opt.grid){
+        ctx.strokeStyle = opt.grid; ctx.lineWidth = 1;
+        var c0 = toHex(0,0,opt.r), c1 = toHex(W,H,opt.r);
+        for (var rr = c0[1]-2; rr <= c1[1]+2; rr++)
+          for (var q = c0[0] - Math.ceil(H/opt.r) - 2; q <= c1[0]+2; q++){
+            var c = center(q, rr, opt.r);
+            if (c[0] < -opt.r || c[0] > W+opt.r || c[1] < -opt.r || c[1] > H+opt.r) continue;
+            hexPath(ctx, c[0], c[1], opt.r*0.96); ctx.stroke();
+          }
+      }
+      for (var k in open){
+        var a = open[k]; if (a < 1) open[k] = Math.min(1, a + 0.05);
+        var s = k.split(","), c2 = center(+s[0], +s[1], opt.r);
+        hexPath(ctx, c2[0], c2[1], opt.r*0.94);
+        ctx.fillStyle = "rgba(43,161,143," + (opt.alpha*a).toFixed(3) + ")"; ctx.fill();
+        if (opt.edge){ ctx.strokeStyle = "rgba(60,199,176," + (0.55*a).toFixed(3) + ")"; ctx.lineWidth = 1; ctx.stroke(); }
+      }
+      if (trail.length > 1){
+        ctx.beginPath(); ctx.moveTo(trail[0][0], trail[0][1]);
+        for (var i = 1; i < trail.length; i++) ctx.lineTo(trail[i][0], trail[i][1]);
+        ctx.strokeStyle = opt.route; ctx.lineWidth = opt.lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(p[0], p[1], opt.dot*2.4, 0, Math.PI*2); ctx.fillStyle = "rgba(47,128,237,.22)"; ctx.fill();
+      ctx.beginPath(); ctx.arc(p[0], p[1], opt.dot, 0, Math.PI*2); ctx.fillStyle = "#2F80ED"; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke();
+    }
+    function loop(){ step(); draw(); if (!reduce) requestAnimationFrame(loop); }
+    resize(); window.addEventListener("resize", resize);
+    if (reduce) draw(); else requestAnimationFrame(loop);
+  }
+
+  new Explorer(document.getElementById("hexcanvas"),
+    {r:22, speed:1.1, warm:520, trail:900, margin:60, sx:.72, sy:.62, alpha:.32, edge:false,
+     grid:"rgba(37,42,50,.55)", route:"rgba(60,199,176,.55)", lw:2, dot:4});
+
+  var counter = document.getElementById("cellcount"), pop = document.getElementById("pop"), popT = 0;
+  new Explorer(document.getElementById("phonecanvas"),
+    {r:13, speed:.8, warm:260, trail:2000, margin:46, sx:.5, sy:.6, alpha:.42, edge:true, wide:true,
+     bg:"#14181d", grid:"rgba(255,255,255,.035)", route:"#3CC7B0", lw:3, dot:6,
+     onOpen:function(n, p){
+       counter.textContent = 100 + n;
+       var now = Date.now();
+       if (now - popT > 1800 && pop.offsetParent){
+         popT = now;
+         pop.style.transition = "none"; pop.style.left = (p[0]+8) + "px"; pop.style.top = (p[1]-14) + "px";
+         pop.style.opacity = "1"; pop.style.transform = "translateY(0)";
+         requestAnimationFrame(function(){ requestAnimationFrame(function(){
+           pop.style.transition = "opacity 1.2s, transform 1.2s"; pop.style.opacity = "0"; pop.style.transform = "translateY(-24px)";
+         }); });
+       }
+     }});
+})();
+</script>
+</body>
+</html>
